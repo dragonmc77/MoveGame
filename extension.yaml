@@ -1,0 +1,8 @@
+Name: Move Game
+Author: dragonmc
+Version: 1.0
+Module: MoveGame.ps1
+Type: Script
+Functions: 
+    - Description: Move
+      FunctionName: moveGame
