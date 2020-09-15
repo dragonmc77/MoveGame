@@ -22,13 +22,16 @@ function global:moveGame() {
         }
     }
 "@
-    if (Test-Path -Path $installDir) {
-        $newDir = $PlayniteApi.Dialogs.SelectFolder()
-        if (-not $newDir) {break}
-        Move-Item -Path $installDir -Destination $newDir -Force -ErrorAction SilentlyContinue -ErrorVariable err
-        if ($err) {$PlayniteApi.Dialogs.ShowErrorMessage("Most likely cause is Playnite not running as admin","Error Moving Folder"); break} 
-    }
+    # proceed only if the installation path exists
+    if (-not (Test-Path -Path $installDir)) {break;}
 
+    # prompt for a the new directory to move the game folder to, then move the folder
+    $newDir = $PlayniteApi.Dialogs.SelectFolder()
+    if (-not $newDir) {break}
+    Move-Item -Path $installDir -Destination $newDir -Force -ErrorAction SilentlyContinue -ErrorVariable err
+    if ($err) {$PlayniteApi.Dialogs.ShowErrorMessage("Most likely cause is Playnite not running as admin","Error Moving Folder"); break} 
+
+    # mklink expects paths passed to have a trailing backslash (\), so check for that, then make the link
     if (-not $installDir.EndsWith("\")) {$installDir = $installDir + "\"}
     if (-not $newDir.EndsWith("\")) {$newDir = $newDir + "\"}
     $success = [mklink.symlink]::CreateSymbolicLink($installDir,$newDir,3)
