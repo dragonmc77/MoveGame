@@ -23,7 +23,7 @@ function global:moveGame() {
     }
 "@
     # proceed only if the installation path exists
-    if (-not (Test-Path -Path $installDir)) {break;}
+    if (-not (Test-Path -Path $installDir)) {break}
 
     # prompt for a the new directory to move the game folder to, then move the folder
     $newDir = $PlayniteApi.Dialogs.SelectFolder()
