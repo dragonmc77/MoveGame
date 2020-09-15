@@ -8,6 +8,11 @@ function global:moveGame() {
     $selectedGame = $selection[0]
     $installDir = $selectedGame.InstallDirectory
 
+    # since junction points are only supported on NTFS volumes, proceed only if that check is successful
+    if (-not (global:Test-NTFS -Path $installDir)) {
+        $PlayniteApi.Dialogs.ShowErrorMessage("The path:`n$installDir`nis either not a local path or not an NTFS volume.","Path Not Supported"); break
+    }    
+
     <#  import the mklink functionality from the shell #>
     Add-Type @"
     using System;
@@ -25,9 +30,16 @@ function global:moveGame() {
     # proceed only if the installation path exists
     if (-not (Test-Path -Path $installDir)) {break}
 
-    # prompt for a the new directory to move the game folder to, then move the folder
+    # prompt for a the new directory to move the game folder to
     $newDir = $PlayniteApi.Dialogs.SelectFolder()
     if (-not $newDir) {break}
+    
+    # since junction points are only supported on NTFS volumes, proceed only if that check is successful
+    if (-not (global:Test-NTFS -Path $newDir)) {
+        $PlayniteApi.Dialogs.ShowErrorMessage("The destination path:`n$newDir`nis either not a local path or not an NTFS volume.","Path Not Supported"); break
+    }
+
+    # move the folder
     Move-Item -Path $installDir -Destination $newDir -Force -ErrorAction SilentlyContinue -ErrorVariable err
     if ($err) {$PlayniteApi.Dialogs.ShowErrorMessage("Most likely cause is Playnite not running as admin","Error Moving Folder"); break} 
 
@@ -41,4 +53,14 @@ function global:moveGame() {
     else {
         $response = $PlayniteApi.Dialogs.ShowErrorMessage("Failed creating link.","Failed")
     }
+}
+
+function global:Test-NTFS {
+    param ([string]$Path)
+
+    $driveLetter = [IO.Path]::GetPathRoot($newDir).Substring(0,1)
+    $volume = Get-Volume | Where-Object {$_.DriveLetter -eq $driveLetter}
+    if ($volume) {
+        if ($volume.FileSystemType -eq "NTFS") {return $true} else {return $false}
+    } else {return $false}
 }
