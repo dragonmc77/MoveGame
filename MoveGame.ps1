@@ -8,6 +8,14 @@ function global:moveGame() {
     $selectedGame = $selection[0]
     $installDir = $selectedGame.InstallDirectory
 
+    #TODO: To gracefully handle ROM games, check for a ROM/Image/ISO path and if found, move that instead
+    $imageFile = $selectedGame.GameImagePath
+
+
+
+    #TODO: Check to make sure the selected game does not share an install folder with any other games
+
+
     # since junction points are only supported on NTFS volumes, proceed only if that check is successful
     if (-not (global:Test-NTFS -Path $installDir)) {
         $PlayniteApi.Dialogs.ShowErrorMessage("The path:`n$installDir`nis either not a local path or not an NTFS volume.","Path Not Supported"); break
@@ -25,14 +33,26 @@ function global:moveGame() {
             [DllImport("kernel32.dll")]
             public static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
         }
+
+        public enum linktype
+        {
+            File = 0,
+            Directory = 1
+        }
     }
 "@
-    # proceed only if the installation path exists
-    if (-not (Test-Path -Path $installDir)) {break}
 
-    # prompt for a the new directory to move the game folder to
-    $newDir = $PlayniteApi.Dialogs.SelectFolder()
-    if (-not $newDir) {break}
+    if ($imageFile -and (Test-Path $imagePath -PathType Leaf)) {
+        $linkType = [mklink.linktype]::File.value__
+        $link = $imageFile
+    }
+
+    # proceed only if the installation path exists
+    #if (-not (Test-Path -Path $installDir)) {break}
+
+    # prompt for a the new directory to move the game to
+    $target = $PlayniteApi.Dialogs.SelectFolder()
+    if (-not $target) {break}
     
     # since junction points are only supported on NTFS volumes, proceed only if that check is successful
     if (-not (global:Test-NTFS -Path $newDir)) {
@@ -43,10 +63,16 @@ function global:moveGame() {
     Move-Item -Path $installDir -Destination $newDir -Force -ErrorAction SilentlyContinue -ErrorVariable err
     if ($err) {$PlayniteApi.Dialogs.ShowErrorMessage("Most likely cause is Playnite not running as admin","Error Moving Folder"); break} 
 
-    # mklink expects paths passed to have a trailing backslash (\), so check for that, then make the link
-    if (-not $installDir.EndsWith("\")) {$installDir = $installDir + "\"}
-    if (-not $newDir.EndsWith("\")) {$newDir = $newDir + "\"}
-    $success = [mklink.symlink]::CreateSymbolicLink($installDir,$newDir,3)
+    if ($imagePath -and (Test-Path $imagePath -PathType Leaf)) {
+
+        $success = [mklink.symlink]::CreateSymbolicLink($installDir,$newDir,[int][mklink.linktype]::File)
+    } else {
+        # mklink expects paths passed to have a trailing backslash (\), so check for that, then make the link
+        if (-not $installDir.EndsWith("\")) {$installDir = $installDir + "\"}
+        if (-not $newDir.EndsWith("\")) {$newDir = $newDir + "\"}
+        $success = [mklink.symlink]::CreateSymbolicLink($installDir,$newDir,[int][mklink.linktype]::Directory)
+    }
+    
     if ($success) {
         $response = $PlayniteApi.Dialogs.ShowMessage("The game folder was moved and a link was created.","Success")
     }
@@ -56,6 +82,7 @@ function global:moveGame() {
 }
 
 function global:Test-NTFS {
+    <#  Look up whether a given path is on an NTFS volume #>
     param ([string]$Path)
 
     $driveLetter = [IO.Path]::GetPathRoot($newDir).Substring(0,1)
