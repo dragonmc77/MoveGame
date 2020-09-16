@@ -4,7 +4,7 @@ MoveGame Extension for Playnite
 
 Install as any extension:
 
-    Create a folder called InstallGame in %appdata%\Playnite\Extensions.
+    Create a folder called MoveGame in %appdata%\Playnite\Extensions.
     Copy the two files (MoveGame.ps1 and extension.yaml) to the folder.
     Make sure the extension is enabled in Playnite -> Settings -> Extensions.
 
@@ -30,4 +30,4 @@ REQUIREMENTS:
 
 Because the extension uses a Windows shell command to create symlinks, Playnite must be run with elevated privileges (Run as Administrator).
 
-This extension was thoroughly tested on Windows 10, but no testing was done on Windows 7. However, all methods used in the extension shoudld be Window 7 compatible.
+This extension was thoroughly tested on Windows 10, but no testing was done on Windows 7. However, all methods used in the extension should be Windows 7 compatible.
